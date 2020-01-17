@@ -1,6 +1,6 @@
 ---
 title: 'Ecology Workshop: Project Proposal'
-author: "Sparkle L. Malone"
+author: "Nicholas Tucker"
 date: "1/10/2020"
 output: html_document
 ---
@@ -9,22 +9,16 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Research Statement
+I am a PhD student at Florida International University in the Biological Sciences Department. I am interested in studying the interactions between whales and their prey items. Historically, I have worked in commercial fisheries as a scientific observer and most recently as a technician in my current lab processing and analyzing acoustic data. I have a general interest in marine ecology and the use of active acoustics in order to study these systems. For my dissertation, I would like to investigate what kind of effects prey items have on whales.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## Objectives and Hypothesis
+I intend to understand the trophic ecology of two discrete ecosystems. One of these ecosystems is in the Gulf of Mexico and the other is in the northwest Atlantic in the waters around Newfoundland, Canada. Both locations have multiple moving parts and it makes it challenging to study trophic interactions due to the high number of uncontrollable variables such as currents, nutrient availability, timing of whale migrations, and non-demonic intrusions. Past data shows that there is some correlation between the two trophic levels. I hypothesize the distribution and density of whales are driven by their prey items which are strongly influenced by environmental factors such as temperature, salinity and availability of plankters. A reduction in primary consumers would therefore result in fewer whales in an area. 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## Methods
+I used scientific split beam echosounders in order to collect the prey data. I have a minimum of two frequencies in order to distinguish between taxa better (according to the leading experts in the field who conduct similar acoustics surveys). This prey item density, abundance, and distribution (geospatially and vertically in the water column). Whale data were collected via sighting efforts augmented by “bigeye” binoculars and standard binoculars (which is again, consistent with current survey methods). I captured samples of prey aggregations using a trawl net in order to distinguish ensonified taxa. I also collected water chemistry data to better understand the environment that the prey exists in. I will use historical data along with collected data to generate a time series analysis and investigate the changes of ecosystem structure. I will also use species distribution models to map out the overlapping distributions between predators and prey. 
 
-```{r cars}
-summary(cars)
-```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
