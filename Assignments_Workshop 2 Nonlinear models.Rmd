@@ -1,0 +1,438 @@
+---
+title: "Workshop 2 Nonlinear Models"
+author: "Nicholas Tucker"
+date: "1/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Objectives
+This analysis is intended to identify trends in ecosystem photosynthetic potential and respiration in the Harvard forest via two methods: (1) fit a light response curve and (2) fit a temperature response curve. The light response curve will measure the relationship between the Net Ecosystem Exchange Rate (NEE) and the Photosynthetically Active Radiation (PAR). The temperature response curve will measure the relationship between NEE and the Air Temperature (TA).
+
+
+# Methods
+## Site Information 
+These data were collected in the Harvard Forest in Massachusets, U.S.A. An Environmental Measurement Station Eddy Flux Tower (EMS) was used to measure the photosynthetic potential and ecosystem respiration. The tower is located at 42.5369N -72.17266W and is 340 m above sea level. The height of the tower is 30 m tall ranging 6 m above the predominately deciduous canopy. Atmospheric gas sensors collect trace gases for long term projects. Data were collected from 1991 to 2016.
+
+```{r pressure, echo=FALSE, fig.cap="Harvard Forest Site", out.width = '100%'}
+knitr::include_graphics("C:/Users/nikol/Desktop/Harvard_Forest.png")
+```
+## Photosynthetic Potential
+Due to photosynthesis being limited by light availability and temperature, two models were developed to consider the photosynthetic potential of the system.
+
+In one model, the photosynthetically active radiation of the forest was used to measure the photosynthetic potential of the area. Via the Michaelis-Menten approach, these data were plotted to estimate the nonlinear least squares to further estimate the model parameters. Then a self-start function was employed to establish initial values for the parameters. Finally, the model was bootstrapped to ensure that the sample estimates were reliable.
+
+In the other model, the Air Temperature was used to measure the photosynthetic potential. A temperature response curve was generated with an Arrhenius approach. Analogous to the first model, plotted data helped estimate the nonlinear least squares. After a self-start function was run, a bootstrap was applied to check the dependability of the model.  
+
+## Ecosystem Respiration
+Carbon plays a large role in ecosystem respiration. Net Ecosystem Exchange is therefore used to measure the amount of carbon leaving the ecosystem. Carbon movement is dependent on multiple factors, but was calculated based on the two parameters modelled above (PAR and TA).
+
+# Results
+The light response curve only had two months out of the entire year in which a Michaelis-Menten approach was functional. July and December represented months where the ecosystem respiration was signifcant (p-value <2e-16). After bootstrapping, residuals where plotted and found to be normally distributed (see figure 1). The quantum efficiency and maximum ecosystem CO2 uptake rate were only significant in July, but where not in December (see table 1). In regards to the temperature response curve, all the months showed a successful model response that satisfied the assumptions set by the Arrhenius approach, the residuals of which are plotted in figure 2. The base respiration rate (at 0 degrees C) and the empirical coefficient were both significant (see table 2). 
+
+```{r plot1, echo=FALSE, fig.cap="Figure 1", out.width = '100%'}
+knitr::include_graphics("C:/Users/nikol/Desktop/LRC_GRAPHS.png")
+```
+
+```{r plot2, echo=FALSE, fig.cap="Figure 2", out.width = '100%'}
+knitr::include_graphics("C:/Users/nikol/Desktop/TRC_AVERAGE.jpeg")
+```
+
+```{r table1, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("C:/Users/nikol/Desktop/Table1.png")
+```
+
+```{r table2, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("C:/Users/nikol/Desktop/Table2.png")
+```
+
+# Discussion 
+The products of the light response curve show that for the two months, July and December, the ecosystem respiration experienced signficant differences as measured by the photosynthetically active radiation. The parameters derived from the the original data stayed within the 95% confidence region for these two months. The temperature response curve showed significant responses for all months as measured by the air temperature. For future data (years 2016 and onward) we could predict that all 12 months the year would yield a significant result as well. 
+
+
+```{NLM_wk_2 NLM_wk_2, eval=FALSE, include=FALSE}
+#NLM and Bootstrapping_ Week_2
+
+#DATA
+setwd("C:/Users/nikol/Desktop/Class/2020Spring/Quantitative-Ecology/Quantitative-Ecology")
+load("C:/Users/nikol/Desktop/Class/2020Spring/Quantitative-Ecology/Quantitative-Ecology/NLM_Workshop.RData")
+
+#Required Packages:
+library(nlstools)
+
+#Light Response Curve
+{
+ #Getting Started
+  {#Visualizing Data
+  par(mai=c(1,1,0.1,0.1))
+  plot(harv$TIMESTAMP,harv$NEE,
+       ylab=expression(paste("NEE(",mu,"mol m"^{-2} ~ s^{-1} ~ ")")), xlab="")
+  
+  #Fitting the light response curve with NLS()
+  plot (NEE ~ PAR, data= day)
+  
+  y= nls(NEE ~ (a1*PAR*ax)/(a1*PAR+ax)+r, data = day[which(day$MONTH == 07),],
+         start= list(a1= -1, ax = -1, r=1),
+         na.action=na.exclude, trace = F, control= nls.control(warnOnly=T))
+  
+  summary(y)
+  
+  #Starting values for Nonlinear Models:
+  ## Create a function of the model:
+  
+  lrcModel <- function(PAR, a1,ax,r) {
+    NEE<- (a1*PAR*ax)/(a1*PAR+ax) + r
+    return(NEE)
+  }
+  
+  ## Initial: Create a function that calculates the initial values from the data.
+  
+  lrc.int<-function(mCall,LHS,data){
+    x<-data$PAR
+    y<-data$NEE
+    
+    r<-max(na.omit(y),na.rm=T) #maximum NEE
+    ax<-min(na.omit(y), na.rm=T) #minimum NEE
+    a1<- (r+ax)/2 #Midway between r and a1
+    
+    ##Create limits for the parameters:
+    a1[a1 > 0]<- -0.1
+    r[r>50] <-ax*-1
+    r[r<0] <- 1
+    
+    value = list (a1,ax,r) #Must include this for the selfStart function
+    names(value) <- mCall[c("a1","ax","r")] #Must include this for the SelfStart function
+    return(value)
+    
+  }
+  
+  #SelfStart function
+  SS.lrc <- selfStart(model=lrcModel,initial = lrc.int)
+  
+  #Find initial values
+  iv <- getInitial(NEE ~ SS.lrc('PAR', "a1", "ax", "r"),
+                   data = day[which(day$MONTH == 07),])
+  
+  iv
+  
+  #Use Initial Values in this model
+  y= nls(NEE~(a1*PAR*ax)/(a1*PAR+ax)+r,day[which(day$MONTH == 07),],
+         start=list(a1=iv$a1, ax= iv$ax, r= iv$r),
+         na.action=na.exclude, trace=F, control=nls.control(warnOnly=T))
+  
+  summary(y)
+  
+  #If the model has converged (Significant ***), so now we check assumptions
+  
+  res.lrc <- nlsResiduals(y)
+  par(mfrow=c(2,2))
+  plot(res.lrc, which=1) #Residuals vs fitted values (Constant Variance)
+  plot(res.lrc, which=3) #Standardized residuals
+  plot(res.lrc, which=4) #Autocorrelation
+  plot(res.lrc, which=5) #Histogram (Normality)
+  
+  
+  #Estimate errors by bootstrapping the data
+  results <-nlsBoot(y,niter=100)
+  summary(results)
+  
+  ## Visualize the errors of bootstrapping
+  plot(results, type="boxplot")
+}
+
+  #CREATING THE DATAFRAME TO STORE PARAMETERS AND STANDARD ERROR
+  { parms.Month <- data.frame(
+    MONTH=numeric(),
+    a1=numeric(),
+    ax=numeric(),
+    r=numeric(),
+    a1.pvalue=numeric(),
+    ax.pvalue=numeric(),
+    r.pvalue=numeric(), stringsAsFactors=FALSE, row.names=NULL)
+ 
+   parms.Month[1:12, 1] <- seq(1,12,1) # Adds months to the file
+  
+ }
+  #WRITING A FUNCTION TO FIT THE MODEL AND EXTRACT PARAMETERS (nee.day)
+  {nee.day <- function(dataframe){ y = nls( NEE ~ (a1 * PAR * ax)/(a1 * PAR + ax) + r, dataframe,
+                                             start=list(a1= iv$a1 , ax= iv$ax, r= iv$r),
+                                             na.action=na.exclude, trace=F,
+                                             control=nls.control(warnOnly=T))
+    
+    y.df <- as.data.frame(cbind(t(coef(summary(y)) [1:3, 1]), t(coef(summary(y)) [1:3, 4])))
+    
+    names(y.df) <-c("a1","ax", "r", "a1.pvalue", "ax.pvalue", "r.pvalue")
+   
+     return (y.df )}
+  }
+  #WRITING A LOOP TO FIT MONTHLY CURVES AND ADD PARAMETERS TO A DATAFRAME (parms.Month)
+  {try(for(j in unique(day$MONTH)){
+      # Determines starting values:
+        iv <- getInitial(NEE ~ SS.lrc('PAR', "a1", "ax", "r"), data = day[which(day$MONTH == j),])
+      # Fits light response curve:
+        y3 <- try(nee.day(day[which(day$MONTH == j),]), silent=T)
+      # Extracts data and saves it in the dataframe
+        try(parms.Month[c(parms.Month$MONTH == j ), 2:7 ] <- cbind(y3), silent=T)
+   
+        rm(y3)
+  
+        }, silent=T)
+    
+      parms.Month 
+  }
+  #BOOTSTRAPPING
+  {# Create file to store parms and se
+    boot.NEE <- data.frame(parms.Month[, c("MONTH")]); names (boot.NEE) <- "MONTH"
+    boot.NEE$a1.est <- 0
+    boot.NEE$ax.est<- 0
+    boot.NEE$r.est<- 0
+    boot.NEE$a1.se<- 0
+    boot.NEE$ax.se<- 0
+    boot.NEE$r.se<- 0
+    
+  {  for ( j in unique(boot.NEE$Month)){
+      y1 <-day[which(day$MONTH == j),] # Subsets data
+      
+      # Determines the starting values:
+        iv <- getInitial(NEE ~ SS.lrc('PAR', "a1", "ax", "r"), data = y1)
+      
+      # Fit curve:
+        day.fit <- nls( NEE ~ (a1 * PAR * ax)/(a1 * PAR + ax) + r, data=y1,
+                      start=list(a1= iv$a1 , ax= iv$ax, r= iv$r),
+                      na.action=na.exclude, trace=F, control=nls.control(warnOnly=T))
+    
+      # Bootstrap and extract values:
+        results <- nlsBoot(day.fit, niter=100 )
+       
+        a <- t(results$estiboot)[1, 1:3]
+        names(a) <- c('a1.est', 'ax.est', 'r.est')
+        b <- t(results$estiboot)[2, 1:3]
+        names(b) <- c('a1.se', 'ax.se', 'r.se')
+        c <- t(data.frame(c(a,b)))
+      
+      # Add bootstrap data to dataframe:
+        boot.NEE[c(boot.NEE$MONTH == j), 2:7] <- c[1, 1:6]
+        rm(day.fit, a, b, c, results, y1)}
+      
+    
+  }  
+    lrc <- merge( parms.Month, boot.NEE, by.x="MONTH", by.y="MONTH") # Merge dataframes
+    lrc  
+  }
+  
+  
+  #PLOTS AND TABLES FOR RESULTS
+{
+### AFTER RUNNING IT A FEW TIMES, ONLY July and December work fall within the parameter limits.   
+  #JULY
+  {
+  l.jul<- subset(lrc, lrc$MONTH == 7)
+  
+  m1.a1.est<-l.jul$a1.est
+  m1.ax.est<-l.jul$ax.est
+  m1.r.est<- l.jul$r.est
+ 
+   lrc.end.jul = nls(NEE~(a1*PAR*ax)/(a1*PAR+ax)+r,day[which(day$MONTH == 7),],
+         start=list(a1=m1.a1.est, ax= m1.ax.est, r= m1.r.est),
+         na.action=na.exclude, trace=F, control=nls.control(warnOnly=T))
+  
+  summary(lrc.end.jul)
+  
+  #If the model has converged (Significant ***), so now we check assumptions
+  
+  res.lrc.end.7 <- nlsResiduals(lrc.end.jul)
+  par(mfrow=c(2,1))
+  plot(res.lrc.end.7, which=1) #Residuals vs fitted values (Constant Variance)
+  plot(res.lrc.end.7, which=3) #Standardized residuals
+  
+  par(mfrow=c(2,1))
+  plot(res.lrc.end.7, which=4) #Autocorrelation
+    abline(a=0, b=1, col = "blue")
+  plot(res.lrc.end.7, which=5) #Histogram (Normality)
+    
+  #Estimate errors by bootstrapping the data
+  end.results.7 <-nlsBoot(lrc.end.jul, niter=100)
+  summary(end.results.7)
+  
+  ## Visualize the errors of bootstrapping
+  plot(end.results.7, type="boxplot")
+ }
+  #DECEMBER
+  {
+    l.dec<- subset(lrc, lrc$MONTH == 12)
+    
+    m1.a1.est<-l.dec$a1.est
+    m1.ax.est<-l.dec$ax.est
+    m1.r.est<- l.dec$r.est
+    
+    lrc.end.dec = nls(NEE~(a1*PAR*ax)/(a1*PAR+ax)+r,day[which(day$MONTH == 12),],
+                      start=list(a1=m1.a1.est, ax= m1.ax.est, r= m1.r.est),
+                      na.action=na.exclude, trace=F, control=nls.control(warnOnly=T))
+    
+    summary(lrc.end.dec)
+    
+    #If the model has converged (Significant ***), so now we check assumptions
+    
+    res.lrc.end.12 <- nlsResiduals(lrc.end.dec)
+    par(mfrow=c(2,2))
+    plot(res.lrc.end.12, which=1) #Residuals vs fitted values (Constant Variance)
+    plot(res.lrc.end.12, which=3) #Standardized residuals
+    
+    par(mfrow=c(2,1))
+    plot(res.lrc.end.12, which=4) #Autocorrelation
+      abline(a=0, b=1, col = "blue")
+    plot(res.lrc.end.12, which=5) #Histogram (Normality)
+    
+    
+    
+    #Estimate errors by bootstrapping the data
+    end.results.12 <-nlsBoot(lrc.end.dec, niter=100)
+    summary(end.results.12)
+    
+    ## Visualize the errors of bootstrapping
+    plot(end.results.12, type="boxplot")
+  }
+}
+
+}
+
+#Temperature Response Curve
+{
+  #Coding
+ {
+  # Selfstart for the trc:
+  trcModel <- function(TA, a, b) {
+    y=a * exp(b*TA)
+    return(y)
+  }
+  
+  # Create a function to find initial values for the selfstart function:
+  trc.int <- function (mCall, LHS, data){
+    x <- data$TA
+    y <- data$NEE
+    
+    a <-1.00703982 + -0.08089044* (min(na.omit(y)))
+    b <- 0.051654 + 0.001400 * (min(na.omit(y))) 
+    
+    value = list(a, b)
+    names(value) <- mCall[c("a", "b")]
+    return(value)
+  }
+  
+  # Selfstart Function
+  SS.trc <- selfStart(model=trcModel,initial= trc.int)
+  
+  #__________________________________________________________________________________________
+  #__________________________________________________________________________________________
+  #__________________________________________________________________________________________
+  
+  # Fitting monthly models:
+  
+  # Create Dataframe to store the data:
+  parms.Month <- data.frame(
+    MONTH=numeric(),
+    a=numeric(),
+    b=numeric(), 
+    a.pvalue=numeric(),
+    b.pvalue=numeric(), stringsAsFactors=FALSE, row.names=NULL)
+  
+  
+  parms.Month[1:12, 1] <- seq(1,12,1) # Creates time file to merge with parm file:
+  
+  #Functions:
+  nee.night <- function(dataframe){y.df = nls(NEE ~ a * exp(b*TA), 
+                                              dataframe, start=list(a= iv$a , b=iv$b ),
+                                              na.action=na.exclude, trace=F,
+                                              control=nls.control(warnOnly=T))
+  
+  y.df <- as.data.frame(cbind(t(coef(summary(y.df))[1:2, 1]), t(coef(summary(y.df)) [1:2, 4])))
+  
+  names(y.df) <- c("a", "b", "a.pvalue", "b.pvalue")                      
+  return(y.df)}
+  
+  # This loop fits monthly models (1:12):
+  try(for(j in unique(night$MONTH)){
+    print(j)
+    
+    iv <- getInitial(NEE ~ SS.trc('TA', "a", "b"), data = night[which(night$MONTH == j),]) 
+    
+    y4 <- try(nee.night(night[which(night$MONTH == j),]), silent=T) # Fit night model
+    
+    try(parms.Month[c(parms.Month$MONTH == j ), 2:5 ] <- cbind(y4), silent=T)
+    
+    rm(y4)
+  }, silent=T)
+  
+  
+  
+  # Create file to store parms and se
+  boot.NEE <- data.frame(parms.Month[, c("MONTH")]); names (boot.NEE) <- "MONTH"
+  boot.NEE$a.est<- 0
+  boot.NEE$b.est<- 0
+  boot.NEE$a.se<- 0
+  boot.NEE$b.se<- 0
+  
+  # Night Model:
+  for ( j in unique(boot.NEE$MONTH)){
+    print(j)
+    y1 <-night[which(night$MONTH == 7),]
+    
+    iv <- getInitial(NEE ~ SS.trc('TA',"a", "b"), data = y1) 
+    
+    night.fit <- nls(NEE ~ a * exp(b*TA), 
+                     data=y1, start=list(a= iv$a , b=iv$b ),
+                     na.action=na.exclude, trace=F,
+                     control=nls.control(warnOnly=T))
+    
+    results <- nlsBoot(night.fit, niter=100 )
+    a <- t(results$estiboot)[1, 1:2]
+    names(a) <- c('a.est', 'b.est')
+    b <- t(results$estiboot)[2, 1:2]
+    names(b) <- c('a.se', 'b.se')
+    c <- t(data.frame(c(a,b)))
+    boot.NEE[c(boot.NEE$MONTH == j), 2:5] <- c[1, 1:4]
+    rm(night.fit, a, b, c, results, y1)
+  }
+  
+  trc <- merge( parms.Month, boot.NEE)
+  trc
+ }  
+  #PLOTS AND TABLES FOR RESULTS
+  {
+    trc.a.est <- mean(trc$a.est)
+    trc.b.est <- mean(trc$b.est)
+    
+    trc.end.avg = nls(NEE ~ a * exp(b*TA),night[which(night$MONTH == j),], 
+                  start=list(a= trc.a.est , b=trc.b.est ),
+                  na.action=na.exclude, trace=F,
+                  control=nls.control(warnOnly=T))
+    
+    summary(trc.end.avg)
+    
+    #If the model has converged (Significant ***), so now we check assumptions
+    
+    res.trc.end <- nlsResiduals(trc.end.avg)
+    par(mfrow=c(2,2))
+    plot(res.trc.end, which=1) #Residuals vs fitted values (Constant Variance)
+    plot(res.trc.end, which=3) #Standardized residuals
+    
+    par(mfrow=c(2,1))
+    plot(res.trc.end, which=4) #Autocorrelation
+    abline(a=0, b=1, col = "blue")
+    plot(res.trc.end, which=5) #Histogram (Normality)
+    
+    #Estimate errors by bootstrapping the data
+    end.results.trc <-nlsBoot(trc.end.avg, niter=100)
+    summary(end.results.trc)
+    
+    ## Visualize the errors of bootstrapping
+    plot(end.results.trc, type="boxplot")
+  }
+}
+
+```
+
+
