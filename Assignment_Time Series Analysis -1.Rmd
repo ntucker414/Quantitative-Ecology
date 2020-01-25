@@ -1,0 +1,38 @@
+---
+title: "Workshop 3 Timeseries Models"
+author: "Nicholas Tucker"
+date: "1/24/2020"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Objectives
+The primary objective of this model is to use the daily rates of NEE for a tower site in a coastal Florida mangrove scrub and use an ARIMA to capture the temporal structure of the time series data. Initially data are modelled using salinity as an explanatory variable. The data is then modelled using the air temperature in order to improve the model. 
+
+#Methods
+For this analysis is I plotted, examined, and prepared a time series for modeling. I also extracted the seasonality component from the time series. Thirdly, I tested for stationarity and applied the appropriate transformations. Finally I chose the order of an ARIMA model which will help following scientist reproduce my work. 
+
+## Site Information 
+These data were collected from a Florida Coastal Everglades Long Term Ecological Research (FCE-LTER) sensor that was positioned in the Florida Everglades (TS/Ph-7). This sensor is found at 25.19080491N -80.63910514W in the middle of a mangrove forest which experiences seasonally driven freshwater inputs and wind-driven estuarine inputs. 
+
+```{r fig 1, echo=FALSE, fig.cap="Sensor TS/Ph-7 25.19080491N -80.63910514W", out.width = '100%'}
+knitr::include_graphics("C:/Users/nikol/Desktop/Florida_wk3.png")
+```
+
+## Statistical Analysis
+For this project I will be testing for stationarity using a Dickey-Fuller test (ADF). I also tested for independence using a Ljung-Box test. An Akaike Information Criterion (AIC) index was used to compare the NEE to salinity and furthermore air temperature. 
+
+# Results
+According to the Dickey-Fuller test, these models (salinity and air temperature) satisfy the requirements for stationarity since all three models have p-values less than 0.5. With regards to the AIC index, the model was improved from the original NEE to the salinity and then furthermore to air temperature. I was able to verify that the data was independent using a Ljung-Box test, with a p-value greater than 0.5, all of my models were considered independent (Table 1). The overall takeaway is that as more explanatory variables were compounded and then compared to NEE, the model became better improved (Figure 1)
+
+```{r table 1, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("C:/Users/nikol/Desktop/table1.png")
+```
+
+```{r fig 2, echo=FALSE, fig.cap="Figure 1", out.width = '100%'}
+knitr::include_graphics("C:/Users/nikol/Desktop/graphs.png")
+```
+
+# Discussion
+These data assist in determining the phenologic patterns in net ecosystem exchange (NEE in the western Everglades. There is a noticeable dip in this exchange rate at the beginning of April which then tries to correct around the sixth month (June). Eventually, the oscillations dampen to approximately -1 g C m^-2 yr^-1. The reason for this drop in NEE is likely due to reduced temperatures and sunlight in the winter and early spring months, but as the later spring and summer persists, the temperatures increase drastically which is indicated by the spike around June. In any case, the compounding of salinity and air temperature to the original model (NEE) indicate a model which improved the time series data. 
